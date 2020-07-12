@@ -1,20 +1,44 @@
 package io.libsoft.playball.server;
 
 
+import io.libsoft.playball.model.Entity;
+import io.libsoft.playball.model.Space;
+import io.libsoft.playball.server.connection.Connection;
 import io.libsoft.playball.server.connection.ConnectionHandler;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import sun.rmi.runtime.Log;
+import java.util.UUID;
+import javafx.collections.FXCollections;
+import javafx.collections.MapChangeListener;
+import javafx.collections.ObservableMap;
 
 public class Server extends ServerSocket implements Runnable {
 
   private final ConnectionHandler connectionHandler;
+  private final ObservableMap<UUID, Connection> loggedConnections;
+  private final Space space;
+  private final Thread modelThread;
+  private ModelInterface modelInterface;
 
   public Server(int port, int backlog, InetAddress bindAddr) throws IOException {
     super(port, backlog, bindAddr);
-    connectionHandler = new ConnectionHandler();
+    space = new Space();
+    loggedConnections = FXCollections.observableHashMap();
+    connectionHandler = new ConnectionHandler(loggedConnections);
+
+    modelThread = new Thread(space);
+    modelThread.start();
+
+    loggedConnections.addListener((MapChangeListener<? super UUID, ? super Connection>) change -> {
+      Entity entity = Entity.randomEntity()
+          .randomBounds(0, 0, 100, 100)
+          .randomVelocity(0, 0, 1e-5, 1e-5);
+      entity.setUuid(change.getKey());
+      space.addEntity(entity);
+    });
+
   }
 
 

@@ -1,46 +1,62 @@
 package io.libsoft.playball.test;
 
-import io.libsoft.playball.server.connection.message.MHandshake;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import io.libsoft.playball.server.connection.message.Message;
 import io.libsoft.playball.server.connection.message.MessageType;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.net.ConnectException;
 import java.net.Socket;
 import java.util.UUID;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 public class Client implements Runnable {
 
+  private final ScheduledExecutorService es = Executors.newScheduledThreadPool(1);
+  private final String host;
+  private final int port;
+  private final Gson gson = new GsonBuilder()
+      .setPrettyPrinting().create();
   private ObjectInputStream ois;
   private ObjectOutputStream oos;
   private Socket socket;
-  private final ScheduledExecutorService es = Executors.newScheduledThreadPool(1);
   private UUID uuid;
+  private ScheduledFuture<?> connectionService;
+  private boolean running;
 
   public Client(String host, int port) {
-    try {
-      socket = new Socket(host, port);
-      oos = new ObjectOutputStream(socket.getOutputStream());
-      ois = new ObjectInputStream(socket.getInputStream());
-    } catch (IOException e) {
-      System.exit(-1);
-      e.printStackTrace();
-    }
+    this.host = host;
+    this.port = port;
+    connect();
 
   }
 
-
-  public void sendMessage() {
+  private void connect() {
     try {
+      System.out.println("Attempting to connect to server...");
+      socket = new Socket(host, port);
+      oos = new ObjectOutputStream(socket.getOutputStream());
+      ois = new ObjectInputStream(socket.getInputStream());
+      System.out.println("Connected successfully.");
+      if (connectionService != null) {
+        connectionService.cancel(true);
+        this.start();
+      }
+    } catch (ConnectException e) {
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+  }
 
-      oos.writeObject(new MHandshake(socket, uuid));
 
+  public void sendMessage(Message message) {
+    try {
+      oos.writeObject(message);
     } catch (IOException e) {
       e.printStackTrace();
     }
@@ -50,24 +66,46 @@ public class Client implements Runnable {
 
   @Override
   public void run() {
-    final Future<?> uuidGet = es.submit(this::sendMessage);
+    if (uuid == null) {
+      Message m = Message.build().messageType(MessageType.REQ_UUID).sign(uuid);
+      sendMessage(m);
+    }
 
-
-
-    while (true) {
+    running = true;
+    while (running) {
+      Message message = null;
       try {
-        Message message = (Message) ois.readObject();
-
-        if (message.getMessageType() ==  MessageType.ASSIGN_UUID){
-          uuid = message.getSenderUUID();
-          oos.writeObject();
+        message = (Message) ois.readObject();
+        System.out.println(gson.toJson(message));
+        if (uuid == null && message.getMessageType() == MessageType.ASSIGN_UUID) {
+          uuid = message.getMessageUUID();
+          Message r = Message.build().messageType(MessageType.ACCEPTED_UUID).sign(uuid);
+          sendMessage(r);
+        } else {
+          message = Message.build().messageType(MessageType.SET_UUID).sign(uuid);
+          sendMessage(message);
         }
-      } catch (IOException | ClassNotFoundException e) {
+      } catch (IOException e) {
+        System.out.println("Connection closed by server.");
+        running = false;
+        try {
+          socket.close();
+        } catch (IOException ioException) {
+          ioException.printStackTrace();
+        }
+        connectionService = es.scheduleAtFixedRate(this::connect, 0, 5, TimeUnit.SECONDS);
+      } catch (ClassNotFoundException e) {
         e.printStackTrace();
       }
+
+
     }
 
   }
 
 
+  public void start() {
+    Thread t = new Thread(this);
+    t.start();
+  }
 }

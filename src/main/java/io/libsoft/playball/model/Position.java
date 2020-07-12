@@ -5,12 +5,9 @@ public class Position {
   private double x;
   private double y;
 
-
-  public Position() {
-    x = 0;
-    y = 0;
-
-
+  public Position(double x, double y) {
+    this.x = x;
+    this.y = y;
   }
 
   public void setX(double x) {
@@ -27,5 +24,9 @@ public class Position {
 
   public double getY() {
     return y;
+  }
+
+  public static Position ZERO() {
+    return new Position(0, 0);
   }
 }

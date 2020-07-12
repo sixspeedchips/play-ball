@@ -1,17 +1,16 @@
 package io.libsoft.playball.model;
 
-import com.sun.xml.internal.ws.resources.UtilMessages;
 import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 public class Space implements Runnable{
 
 
   private final HashMap<UUID, Entity> entities;
   private boolean running;
-
+  private ScheduledExecutorService executorService = Executors.newScheduledThreadPool(1);
 
   private final double WIDTH;
   private final double HEIGHT;
@@ -28,11 +27,17 @@ public class Space implements Runnable{
   }
 
 
+
   @Override
   public void run() {
     running = true;
     while (running){
       try {
+
+        for (Entity entity : entities.values()) {
+          entity.update();
+        }
+        System.out.println(this);
         Thread.sleep(1000);
       } catch (InterruptedException ignored) {
       }
@@ -41,5 +46,15 @@ public class Space implements Runnable{
   }
 
 
+  public void addEntity(Entity entity) {
+    entities.put(entity.getUuid(), entity);
+  }
 
+
+  @Override
+  public String toString() {
+    return "Space{" +
+        "entities=" + entities +
+        '}';
+  }
 }

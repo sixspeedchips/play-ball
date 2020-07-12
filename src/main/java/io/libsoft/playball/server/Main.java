@@ -12,7 +12,9 @@ public class Main {
 
     Thread serverThread = new Thread(server);
 
+
     serverThread.start();
+
     serverThread.join();
 
   }

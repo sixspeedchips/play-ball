@@ -8,8 +8,7 @@ public class Main {
     int port = 10000;
     String host = "localhost";
 
-    Client client = null;
-    client = new Client(host, port);
+    Client client = new Client(host, port);
     client.start();
 
 

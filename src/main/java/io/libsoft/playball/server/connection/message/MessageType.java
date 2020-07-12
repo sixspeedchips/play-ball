@@ -7,6 +7,7 @@ public enum MessageType {
   REQ_UUID,
   ASSIGN_UUID,
   SET_UUID,
-  ACCEPTED_UUID
+  ACCEPTED_UUID,
+  SUBSCRIBE,
 
 }

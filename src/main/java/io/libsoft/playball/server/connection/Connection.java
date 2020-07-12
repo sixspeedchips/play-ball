@@ -8,22 +8,20 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.util.UUID;
-import javafx.collections.ObservableMap;
 
 public class Connection implements Runnable {
 
-  private final UUID serverUUID;
-  private final ObservableMap<UUID, Connection> connectionLog;
+  private final SubscriptionService subscriptionService;
   private ObjectInputStream ois;
   private ObjectOutputStream oos;
   private Socket socket;
   private boolean running;
+  private UUID connectionUUID;
 
+  public Connection(Socket socket,
+      SubscriptionService subscriptionService) {
 
-  public Connection(UUID serverUUID,
-      Socket socket, ObservableMap<UUID, Connection> connectionLog) {
-    this.serverUUID = serverUUID;
-    this.connectionLog = connectionLog;
+    this.subscriptionService = subscriptionService;
     try {
       this.socket = socket;
       oos = new ObjectOutputStream(socket.getOutputStream());
@@ -53,28 +51,30 @@ public class Connection implements Runnable {
     return socket;
   }
 
+
   @Override
   public void run() {
     running = true;
-    while (running){
+    while (running) {
       try {
         Message m = (Message) ois.readObject();
         System.out.println(new GsonBuilder().setPrettyPrinting().create().toJson(m));
         switch (m.getMessageType()) {
           case REQ_UUID:
-            UUID uuid = UUID.nameUUIDFromBytes(socket.toString().getBytes());
+            connectionUUID = UUID.nameUUIDFromBytes(socket.toString().getBytes());
             Message r = Message.build()
                 .messageType(MessageType.ASSIGN_UUID)
-                .messageUUID(uuid)
-                .sign(serverUUID);
+                .messageUUID(connectionUUID)
+                .sign(subscriptionService.getServerUUID());
             sendMessage(r);
             break;
           case ACCEPTED_UUID:
-            connectionLog.put(m.getSenderUUID(), this);
+            subscriptionService.successfulConnection(m.getSenderUUID(), this);
             break;
-          case SET_UUID:
-            connectionLog.put(m.getSenderUUID(), this);
+          case SUBSCRIBE:
+            subscriptionService.gameStateSubscription(this);
             break;
+
         }
 
 
@@ -84,5 +84,19 @@ public class Connection implements Runnable {
 
       }
     }
+  }
+
+  @Override
+  public String toString() {
+    return connectionUUID.toString();
+  }
+
+  public interface SubscriptionService {
+
+    void gameStateSubscription(Connection connection);
+
+    void successfulConnection(UUID uuid, Connection connection);
+
+    UUID getServerUUID();
   }
 }

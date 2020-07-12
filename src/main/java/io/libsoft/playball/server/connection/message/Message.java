@@ -9,12 +9,15 @@ public class Message implements Serializable {
   private final UUID senderUUID;
   private final UUID recipientUUID;
   private final MessageType messageType;
+  private final GameState gameState;
+
 
   private Message(Builder builder) {
     messageUUID = builder.messageUUID;
     senderUUID = builder.senderUUID;
     recipientUUID = builder.recipientUUID;
     messageType = builder.messageType;
+    gameState = builder.gameState;
   }
 
   public static Builder build() {
@@ -40,6 +43,7 @@ public class Message implements Serializable {
   public static final class Builder {
 
     private MessageType messageType;
+    private GameState gameState;
     private UUID messageUUID;
     private UUID senderUUID;
     private UUID recipientUUID;
@@ -61,6 +65,11 @@ public class Message implements Serializable {
 
     public Builder messageType(MessageType messageType) {
       this.messageType = messageType;
+      return this;
+    }
+
+    public Builder gameState(GameState gameState) {
+      this.gameState = gameState;
       return this;
     }
 

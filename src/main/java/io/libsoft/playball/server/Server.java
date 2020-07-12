@@ -20,13 +20,12 @@ public class Server extends ServerSocket implements Runnable {
   private final ObservableMap<UUID, Connection> loggedConnections;
   private final Space space;
   private final Thread modelThread;
-  private ModelInterface modelInterface;
 
   public Server(int port, int backlog, InetAddress bindAddr) throws IOException {
     super(port, backlog, bindAddr);
     space = new Space();
     loggedConnections = FXCollections.observableHashMap();
-    connectionHandler = new ConnectionHandler(loggedConnections);
+    connectionHandler = new ConnectionHandler(loggedConnections, space::getCurrentGameState);
 
     modelThread = new Thread(space);
     modelThread.start();
@@ -35,6 +34,7 @@ public class Server extends ServerSocket implements Runnable {
       Entity entity = Entity.randomEntity()
           .randomBounds(0, 0, 100, 100)
           .randomVelocity(0, 0, 1e-5, 1e-5);
+      System.out.println(change.getKey());
       entity.setUuid(change.getKey());
       space.addEntity(entity);
     });
@@ -59,5 +59,6 @@ public class Server extends ServerSocket implements Runnable {
 
 
   }
+
 
 }

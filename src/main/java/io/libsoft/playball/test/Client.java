@@ -71,21 +71,25 @@ public class Client implements Runnable {
       sendMessage(m);
     }
 
+
     running = true;
     while (running) {
       Message message = null;
       try {
         message = (Message) ois.readObject();
         System.out.println(gson.toJson(message));
+
+        // accepts the new UUID and replies with a subscription request
+        // to the the current game state
         if (uuid == null && message.getMessageType() == MessageType.ASSIGN_UUID) {
           uuid = message.getMessageUUID();
           Message r = Message.build().messageType(MessageType.ACCEPTED_UUID).sign(uuid);
           sendMessage(r);
-        } else {
-          message = Message.build().messageType(MessageType.SET_UUID).sign(uuid);
-          sendMessage(message);
+          Message m = Message.build().messageType(MessageType.SUBSCRIBE).sign(uuid);
+          sendMessage(m);
         }
       } catch (IOException e) {
+        e.printStackTrace();
         System.out.println("Connection closed by server.");
         running = false;
         try {

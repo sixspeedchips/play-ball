@@ -1,11 +1,16 @@
 package io.libsoft.playball.model;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import io.libsoft.playball.server.connection.message.GameState;
 import java.util.HashMap;
 import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
-public class Space implements Runnable{
+public class Space implements Runnable {
+
+  private static Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
 
   private final HashMap<UUID, Entity> entities;
@@ -14,6 +19,7 @@ public class Space implements Runnable{
 
   private final double WIDTH;
   private final double HEIGHT;
+  private GameState currentGameState;
 
   public Space() {
     entities = new HashMap<>();
@@ -34,10 +40,14 @@ public class Space implements Runnable{
     while (running){
       try {
 
+        currentGameState = new GameState();
         for (Entity entity : entities.values()) {
           entity.update();
+          currentGameState.addEntity(entity);
         }
-        System.out.println(this);
+
+//        System.out.println(this);
+
         Thread.sleep(1000);
       } catch (InterruptedException ignored) {
       }
@@ -45,6 +55,9 @@ public class Space implements Runnable{
     }
   }
 
+  public GameState getCurrentGameState() {
+    return currentGameState;
+  }
 
   public void addEntity(Entity entity) {
     entities.put(entity.getUuid(), entity);
@@ -53,8 +66,9 @@ public class Space implements Runnable{
 
   @Override
   public String toString() {
-    return "Space{" +
-        "entities=" + entities +
-        '}';
+    return gson.toJson(entities);
   }
+
+
+
 }

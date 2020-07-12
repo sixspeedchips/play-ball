@@ -14,7 +14,6 @@ public class Main {
 
 
     serverThread.start();
-
     serverThread.join();
 
   }

@@ -1,4 +1,4 @@
-package io.libsoft.playball.model;
+package io.libsoft.asteroid.model;
 
 
 import io.libsoft.physix.factory.VectorFactory;

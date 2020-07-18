@@ -1,8 +1,8 @@
-package io.libsoft.playball.server.connection;
+package io.libsoft.asteroid.server.connection;
 
 import com.google.gson.GsonBuilder;
-import io.libsoft.playball.server.connection.message.Message;
-import io.libsoft.playball.server.connection.message.MessageType;
+import io.libsoft.messenger.Message;
+import io.libsoft.messenger.MessageType;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -11,7 +11,7 @@ import java.util.UUID;
 
 public class Connection implements Runnable {
 
-  private final SubscriptionService subscriptionService;
+  private final SubscriptionManager subscriptionManager;
   private ObjectInputStream ois;
   private ObjectOutputStream oos;
   private Socket socket;
@@ -19,9 +19,9 @@ public class Connection implements Runnable {
   private UUID connectionUUID;
 
   public Connection(Socket socket,
-      SubscriptionService subscriptionService) {
+      SubscriptionManager subscriptionManager) {
 
-    this.subscriptionService = subscriptionService;
+    this.subscriptionManager = subscriptionManager;
     try {
       this.socket = socket;
       oos = new ObjectOutputStream(socket.getOutputStream());
@@ -65,14 +65,14 @@ public class Connection implements Runnable {
             Message r = Message.build()
                 .messageType(MessageType.ASSIGN_UUID)
                 .messageUUID(connectionUUID)
-                .sign(subscriptionService.getServerUUID());
+                .sign(subscriptionManager.getServerUUID());
             sendMessage(r);
             break;
           case ACCEPTED_UUID:
-            subscriptionService.successfulConnection(m.getSenderUUID(), this);
+            subscriptionManager.successfulConnection(m.getSenderUUID(), this);
             break;
           case SUBSCRIBE:
-            subscriptionService.gameStateSubscription(this);
+            subscriptionManager.gameStateSubscription(this);
             break;
 
         }
@@ -81,7 +81,7 @@ public class Connection implements Runnable {
       } catch (IOException | ClassNotFoundException e) {
         running = false;
         System.out.println("Connection closed by remote client.");
-
+        subscriptionManager.clearEntity(connectionUUID);
       }
     }
   }
@@ -91,12 +91,14 @@ public class Connection implements Runnable {
     return connectionUUID.toString();
   }
 
-  public interface SubscriptionService {
+  public interface SubscriptionManager {
 
     void gameStateSubscription(Connection connection);
 
     void successfulConnection(UUID uuid, Connection connection);
 
     UUID getServerUUID();
+
+    void clearEntity(UUID uuid);
   }
 }

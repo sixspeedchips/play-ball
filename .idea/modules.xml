@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/play-ball.iml" filepath="$PROJECT_DIR$/play-ball.iml" />
+      <module fileurl="file://$PROJECT_DIR$/asteroid-server.iml" filepath="$PROJECT_DIR$/asteroid-server.iml" />
     </modules>
   </component>
 </project>

@@ -1,4 +1,4 @@
-package io.libsoft.playball.server;
+package io.libsoft.asteroid.server;
 
 import java.io.IOException;
 import java.net.InetAddress;

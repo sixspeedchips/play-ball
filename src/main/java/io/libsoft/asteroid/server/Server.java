@@ -1,10 +1,10 @@
-package io.libsoft.playball.server;
+package io.libsoft.asteroid.server;
 
 
-import io.libsoft.playball.model.Entity;
-import io.libsoft.playball.model.Space;
-import io.libsoft.playball.server.connection.Connection;
-import io.libsoft.playball.server.connection.ConnectionHandler;
+import io.libsoft.asteroid.model.Entity;
+import io.libsoft.asteroid.model.Space;
+import io.libsoft.asteroid.server.connection.Connection;
+import io.libsoft.asteroid.server.connection.ConnectionHandler;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
@@ -25,15 +25,15 @@ public class Server extends ServerSocket implements Runnable {
     super(port, backlog, bindAddr);
     space = new Space();
     loggedConnections = FXCollections.observableHashMap();
-    connectionHandler = new ConnectionHandler(loggedConnections, space::getCurrentGameState);
+    connectionHandler = new ConnectionHandler(loggedConnections, space);
 
     modelThread = new Thread(space);
     modelThread.start();
 
     loggedConnections.addListener((MapChangeListener<? super UUID, ? super Connection>) change -> {
       Entity entity = Entity.randomEntity()
-          .randomBounds(0, 0, 100, 100)
-          .randomVelocity(0, 0, 1e-5, 1e-5);
+          .randomBounds(200, 200, 300, 300)
+          .randomVelocity(-1e-1, -1e-1, 1e-1, 1e-1);
       System.out.println(change.getKey());
       entity.setUuid(change.getKey());
       space.addEntity(entity);

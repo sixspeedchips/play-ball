@@ -1,4 +1,4 @@
-package io.libsoft.playball.server.service;
+package io.libsoft.asteroid.server.service;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;

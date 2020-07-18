@@ -1,14 +1,16 @@
-package io.libsoft.playball.model;
+package io.libsoft.asteroid.model;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import io.libsoft.playball.server.connection.message.GameState;
+import io.libsoft.asteroid.server.connection.ConnectionHandler.ModelState;
+import io.libsoft.messenger.GameState;
+import io.libsoft.messenger.PEntity;
 import java.util.HashMap;
 import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
-public class Space implements Runnable {
+public class Space implements Runnable, ModelState {
 
   private static Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
@@ -43,21 +45,17 @@ public class Space implements Runnable {
         currentGameState = new GameState();
         for (Entity entity : entities.values()) {
           entity.update();
-          currentGameState.addEntity(entity);
+          currentGameState.getPEntities().add(new PEntity(entity.getX(), entity.getY()));
         }
 
-//        System.out.println(this);
-
-        Thread.sleep(1000);
+        Thread.sleep(16);
       } catch (InterruptedException ignored) {
       }
 
     }
   }
 
-  public GameState getCurrentGameState() {
-    return currentGameState;
-  }
+
 
   public void addEntity(Entity entity) {
     entities.put(entity.getUuid(), entity);
@@ -70,5 +68,13 @@ public class Space implements Runnable {
   }
 
 
+  @Override
+  public GameState getState() {
+    return currentGameState;
+  }
 
+  @Override
+  public void removeEntityByUUID(UUID uuid) {
+    entities.remove(uuid);
+  }
 }

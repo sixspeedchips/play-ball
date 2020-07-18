@@ -1,8 +1,9 @@
-package io.libsoft.playball.server.connection;
+package io.libsoft.asteroid.server.connection;
 
-import io.libsoft.playball.server.connection.Connection.SubscriptionService;
-import io.libsoft.playball.server.connection.message.GameState;
-import io.libsoft.playball.server.connection.message.Message;
+import io.libsoft.asteroid.server.connection.Connection.SubscriptionManager;
+import io.libsoft.messenger.GameState;
+import io.libsoft.messenger.Message;
+import io.libsoft.messenger.MessageType;
 import java.net.Socket;
 import java.util.LinkedList;
 import java.util.List;
@@ -12,7 +13,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import javafx.collections.ObservableMap;
 
-public class ConnectionHandler implements SubscriptionService {
+public class ConnectionHandler implements SubscriptionManager {
 
   private final List<Thread> connectionThreads = new LinkedList<>();
   private final List<Connection> subscribers = new LinkedList<>();
@@ -21,23 +22,22 @@ public class ConnectionHandler implements SubscriptionService {
 
 
   private final ObservableMap<UUID, Connection> connectionsLog;
-  private final SpaceState spaceStateGetter;
+  private final ModelState modelState;
 
-  public ConnectionHandler(ObservableMap<UUID, Connection> connectionsLog, SpaceState spaceState) {
+  public ConnectionHandler(ObservableMap<UUID, Connection> connectionsLog, ModelState modelState) {
     this.connectionsLog = connectionsLog;
-    this.spaceStateGetter = spaceState;
-    executor.scheduleAtFixedRate(this::broadcast, 0, 1000, TimeUnit.MILLISECONDS);
+    this.modelState = modelState;
+    executor.scheduleAtFixedRate(this::broadcast, 0, 50, TimeUnit.MILLISECONDS);
 
   }
 
 
   private void broadcast() {
     Message m;
-    GameState g = spaceStateGetter.getState();
+    GameState g = modelState.getState();
     for (Connection subscriber : subscribers) {
-      m = Message.build().gameState(g).sign(serverUUID);
+      m = Message.build().messageType(MessageType.GAME_STATE).gameState(g).sign(serverUUID);
       subscriber.sendMessage(m);
-
     }
   }
 
@@ -66,13 +66,21 @@ public class ConnectionHandler implements SubscriptionService {
     return serverUUID;
   }
 
+  @Override
+  public void clearEntity(UUID uuid) {
+    modelState.removeEntityByUUID(uuid);
+  }
+
+
   public Connection getConnectionByUUID(UUID uuid) {
     return connectionsLog.get(uuid);
   }
 
-  public interface SpaceState {
+  public interface ModelState {
 
     GameState getState();
+
+    void removeEntityByUUID(UUID uuid);
   }
 
 

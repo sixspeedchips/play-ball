@@ -1,26 +1,40 @@
 package io.libsoft.asteroid.model;
 
 
+import io.libsoft.messenger.service.GsonService;
 import io.libsoft.physix.factory.VectorFactory;
 import io.libsoft.physix.vector.MutableVector;
+import java.util.List;
 import java.util.Random;
 import java.util.UUID;
+import javafx.scene.input.KeyCode;
 
 public class Entity {
 
   private final MutableVector velocity;
   private final MutableVector position;
+  private transient final ModelSpace modelSpace;
   private UUID uuid = UUID.randomUUID();
+  private boolean paused;
+  private double SPEED = .02;
 
-  public Entity() {
+  public Entity(ModelSpace modelSpace) {
+    this.modelSpace = modelSpace;
     velocity = VectorFactory.mutableZeroVector();
     position = VectorFactory.mutableZeroVector();
   }
 
-  public static Entity randomEntity() {
-    return new Entity();
+  public static Entity randomEntity(ModelSpace modelSpace) {
+    return new Entity(modelSpace);
   }
 
+  public void pause() {
+    paused = true;
+  }
+
+  public void unpause() {
+    paused = false;
+  }
 
   public UUID getUuid() {
     return uuid;
@@ -36,8 +50,15 @@ public class Entity {
 
   public void update() {
     position.add(velocity);
+    position.setX(mod(position.getX(), modelSpace.getWidth()));
+    position.setY(mod(position.getY(), modelSpace.getHeight()));
   }
 
+  private double mod(double a, double b) {
+
+    double r = a % b;
+    return r < 0 ? r + b : r;
+  }
 
   public double getX() {
     return position.getX();
@@ -47,6 +68,9 @@ public class Entity {
     return position.getY();
   }
 
+  public boolean isPaused() {
+    return paused;
+  }
 
   public Entity randomBounds(double x1, double y1, double x2, double y2) {
 
@@ -65,10 +89,30 @@ public class Entity {
 
   @Override
   public String toString() {
-    return "Entity{" +
-        "velocity=" + velocity +
-        ", position=" + position +
-        ", uuid=" + uuid +
-        '}';
+    return GsonService.getAnnotater().toJson(this);
+  }
+
+  public void addForce(List<KeyCode> kc) {
+    for (KeyCode keyCode : kc) {
+      switch (keyCode) {
+
+        case A:
+          velocity.add(-SPEED, 0);
+          break;
+        case S:
+          velocity.add(0, SPEED);
+          break;
+        case D:
+          velocity.add(SPEED, 0);
+          break;
+        case W:
+          velocity.add(0, -SPEED);
+          break;
+        case SPACE:
+          velocity.multiply(.8);
+          break;
+      }
+    }
+
   }
 }

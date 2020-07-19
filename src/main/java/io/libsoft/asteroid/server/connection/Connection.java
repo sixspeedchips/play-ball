@@ -1,27 +1,32 @@
 package io.libsoft.asteroid.server.connection;
 
-import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
 import io.libsoft.messenger.Message;
 import io.libsoft.messenger.MessageType;
+import io.libsoft.messenger.jsonmessages.SetName;
+import io.libsoft.messenger.service.GsonService;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.util.List;
 import java.util.UUID;
+import javafx.scene.input.KeyCode;
 
 public class Connection implements Runnable {
 
-  private final SubscriptionManager subscriptionManager;
+  private final ConnectionManager connectionManager;
   private ObjectInputStream ois;
   private ObjectOutputStream oos;
   private Socket socket;
   private boolean running;
   private UUID connectionUUID;
+  private String username;
 
   public Connection(Socket socket,
-      SubscriptionManager subscriptionManager) {
+      ConnectionManager connectionManager) {
 
-    this.subscriptionManager = subscriptionManager;
+    this.connectionManager = connectionManager;
     try {
       this.socket = socket;
       oos = new ObjectOutputStream(socket.getOutputStream());
@@ -58,30 +63,37 @@ public class Connection implements Runnable {
     while (running) {
       try {
         Message m = (Message) ois.readObject();
-        System.out.println(new GsonBuilder().setPrettyPrinting().create().toJson(m));
+        System.out.println(GsonService.getPprinter().toJson(m));
         switch (m.getMessageType()) {
-          case REQ_UUID:
-            connectionUUID = UUID.nameUUIDFromBytes(socket.toString().getBytes());
+          case ACCEPTED_UUID:
+            connectionManager.successfulConnection(m.getSenderUUID(), this);
+            break;
+          case SUBSCRIBE:
+            connectionManager.gameStateSubscription(connectionUUID, this);
+            break;
+          case SET_NAME:
+            SetName payload = GsonService.getInstance().fromJson(m.getPayload(), SetName.class);
+            username = payload.getUsername();
+            connectionUUID = connectionManager.setOrGetUUID(username);
             Message r = Message.build()
                 .messageType(MessageType.ASSIGN_UUID)
                 .messageUUID(connectionUUID)
-                .sign(subscriptionManager.getServerUUID());
+                .sign(connectionManager.getServerUUID());
             sendMessage(r);
             break;
-          case ACCEPTED_UUID:
-            subscriptionManager.successfulConnection(m.getSenderUUID(), this);
+          case CONTROL:
+            List<KeyCode> kc = GsonService.getInstance().fromJson(m.getPayload(), new TypeToken<List<KeyCode>>() {
+            }.getType());
+            connectionManager.control(connectionUUID, kc);
             break;
-          case SUBSCRIBE:
-            subscriptionManager.gameStateSubscription(this);
-            break;
-
         }
 
 
       } catch (IOException | ClassNotFoundException e) {
         running = false;
         System.out.println("Connection closed by remote client.");
-        subscriptionManager.clearEntity(connectionUUID);
+        connectionManager.connectionHold(connectionUUID);
+
       }
     }
   }
@@ -91,14 +103,4 @@ public class Connection implements Runnable {
     return connectionUUID.toString();
   }
 
-  public interface SubscriptionManager {
-
-    void gameStateSubscription(Connection connection);
-
-    void successfulConnection(UUID uuid, Connection connection);
-
-    UUID getServerUUID();
-
-    void clearEntity(UUID uuid);
-  }
 }

@@ -14,9 +14,11 @@ public class Entity {
   private final MutableVector velocity;
   private final MutableVector position;
   private transient final ModelSpace modelSpace;
+  private final double SPEED = .5;
+  private double theta = 0;
   private UUID uuid = UUID.randomUUID();
   private boolean paused;
-  private double SPEED = .02;
+  private double angularVelocity = 0;
 
   public Entity(ModelSpace modelSpace) {
     this.modelSpace = modelSpace;
@@ -49,13 +51,17 @@ public class Entity {
   }
 
   public void update() {
+    double reduce = Math.exp(-(1 + velocity.getMagnitude()) / 150);
+    double angularReduction = Math.exp(-(1 + angularVelocity) / 13);
+    velocity.multiply(reduce);
+    theta += angularVelocity;
+    angularVelocity *= angularReduction;
     position.add(velocity);
     position.setX(mod(position.getX(), modelSpace.getWidth()));
     position.setY(mod(position.getY(), modelSpace.getHeight()));
   }
 
   private double mod(double a, double b) {
-
     double r = a % b;
     return r < 0 ? r + b : r;
   }
@@ -93,26 +99,42 @@ public class Entity {
   }
 
   public void addForce(List<KeyCode> kc) {
+    double x, y;
     for (KeyCode keyCode : kc) {
       switch (keyCode) {
 
         case A:
-          velocity.add(-SPEED, 0);
+//          updateHeading(-Math.PI / 180*4);
+          angularVelocity -= Math.PI / 180 * .8;
           break;
         case S:
-          velocity.add(0, SPEED);
+          x = SPEED * Math.cos(theta);
+          y = SPEED * Math.sin(theta);
+          velocity.add(-x, -y);
           break;
         case D:
-          velocity.add(SPEED, 0);
+//          updateHeading(Math.PI / 180*4);
+          angularVelocity += Math.PI / 180 * .8;
           break;
         case W:
-          velocity.add(0, -SPEED);
+          x = SPEED * Math.cos(theta);
+          y = SPEED * Math.sin(theta);
+          velocity.add(x, y);
           break;
         case SPACE:
-          velocity.multiply(.8);
+          velocity.multiply(.86);
+          angularVelocity *= .86;
           break;
       }
     }
 
+  }
+
+  private void updateHeading(double heading) {
+    this.theta = mod(this.theta + heading, 2 * Math.PI);
+  }
+
+  public double getTheta() {
+    return theta;
   }
 }

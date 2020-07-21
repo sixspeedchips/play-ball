@@ -3,7 +3,6 @@ package io.libsoft.asteroid.model;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import io.libsoft.messenger.GameState;
-import io.libsoft.messenger.PEntity;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
@@ -26,8 +25,8 @@ public class Space implements ModelState, ModelSpace {
 
   public Space() {
     entities = new HashMap<>();
-    WIDTH = 500;
-    HEIGHT = 500;
+    WIDTH = 1000;
+    HEIGHT = 1000;
 
   }
 
@@ -38,11 +37,10 @@ public class Space implements ModelState, ModelSpace {
 
   private void update() {
     currentGameState = new GameState();
-//    System.out.println(entities.values());
     for (Entity entity : entities.values()) {
       if (!entity.isPaused()) {
         entity.update();
-        currentGameState.getPEntities().add(new PEntity(entity.getX(), entity.getY()));
+        currentGameState.getPEntities().add(entity.toString());
       }
     }
   }
@@ -90,7 +88,6 @@ public class Space implements ModelState, ModelSpace {
   public void addEntity(UUID uuid) {
     Entity entity = Entity.randomEntity(this)
         .randomBounds(200, 200, 300, 300);
-//        .randomVelocity(-5e-1, -5e-1, 5e-1, 5e-1);
 
     entity.setUuid(uuid);
     entities.put(uuid, entity);

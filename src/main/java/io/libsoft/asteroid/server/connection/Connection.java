@@ -63,7 +63,7 @@ public class Connection implements Runnable {
     while (running) {
       try {
         Message m = (Message) ois.readObject();
-        System.out.println(GsonService.getPprinter().toJson(m));
+//        System.out.println(GsonService.getPprinter().toJson(m));
         switch (m.getMessageType()) {
           case ACCEPTED_UUID:
             connectionManager.successfulConnection(m.getSenderUUID(), this);

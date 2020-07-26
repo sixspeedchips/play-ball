@@ -2,8 +2,8 @@ package io.libsoft.asteroid.model;
 
 
 import io.libsoft.messenger.service.GsonService;
-import io.libsoft.physix.factory.VectorFactory;
-import io.libsoft.physix.vector.MutableVector;
+import io.libsoft.physix.vector.Vector2d;
+import io.libsoft.physix.vector.VectorFactory;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
@@ -11,19 +11,21 @@ import javafx.scene.input.KeyCode;
 
 public class Entity {
 
-  private final MutableVector velocity;
-  private final MutableVector position;
+  private final Vector2d velocity;
+  private final Vector2d acceleration;
+  private final Vector2d position;
   private transient final ModelSpace modelSpace;
-  private final double SPEED = .5;
+
   private double theta = 0;
-  private UUID uuid = UUID.randomUUID();
   private boolean paused;
   private double angularVelocity = 0;
+  private UUID uuid;
 
   public Entity(ModelSpace modelSpace) {
     this.modelSpace = modelSpace;
     velocity = VectorFactory.mutableZeroVector();
     position = VectorFactory.mutableZeroVector();
+    acceleration = VectorFactory.mutableZeroVector();
   }
 
   public static Entity randomEntity(ModelSpace modelSpace) {
@@ -51,14 +53,19 @@ public class Entity {
   }
 
   public void update() {
-    double reduce = Math.exp(-(1 + velocity.getMagnitude()) / 150);
+    double reduceV = Math.exp(-(1 + velocity.getMagnitude()) * modelSpace.getStateSpaceConstraint().getFriction());
+    double reduceA =
+        Math.exp(-(1 + velocity.getMagnitude()) * modelSpace.getStateSpaceConstraint().getFriction() * 1e-2);
     double angularReduction = Math.exp(-(1 + angularVelocity) / 13);
-    velocity.multiply(reduce);
+
+    acceleration.multiply(reduceA);
+    velocity.multiply(reduceV);
     theta += angularVelocity;
     angularVelocity *= angularReduction;
+    velocity.add(acceleration);
     position.add(velocity);
-    position.setX(mod(position.getX(), modelSpace.getWidth()));
-    position.setY(mod(position.getY(), modelSpace.getHeight()));
+    position.setX(mod(position.getX(), modelSpace.getStateSpaceConstraint().getWidth()));
+    position.setY(mod(position.getY(), modelSpace.getStateSpaceConstraint().getHeight()));
   }
 
   private double mod(double a, double b) {
@@ -105,25 +112,26 @@ public class Entity {
 
         case A:
 //          updateHeading(-Math.PI / 180*4);
-          angularVelocity -= Math.PI / 180 * .8;
+          angularVelocity -= Math.PI / 180 * modelSpace.getStateSpaceConstraint().getAngularVelocityModifier();
           break;
         case S:
-          x = SPEED * Math.cos(theta);
-          y = SPEED * Math.sin(theta);
-          velocity.add(-x, -y);
+          x = modelSpace.getStateSpaceConstraint().getAcceleration() * Math.cos(theta);
+          y = modelSpace.getStateSpaceConstraint().getAcceleration() * Math.sin(theta);
+          acceleration.add(-x, -y);
           break;
         case D:
 //          updateHeading(Math.PI / 180*4);
-          angularVelocity += Math.PI / 180 * .8;
+          angularVelocity += Math.PI / 180 * modelSpace.getStateSpaceConstraint().getAngularVelocityModifier();
           break;
         case W:
-          x = SPEED * Math.cos(theta);
-          y = SPEED * Math.sin(theta);
-          velocity.add(x, y);
+          x = modelSpace.getStateSpaceConstraint().getAcceleration() * Math.cos(theta);
+          y = modelSpace.getStateSpaceConstraint().getAcceleration() * Math.sin(theta);
+          acceleration.add(x, y);
           break;
         case SPACE:
-          velocity.multiply(.86);
-          angularVelocity *= .86;
+          acceleration.multiply(modelSpace.getStateSpaceConstraint().getBrake());
+          velocity.multiply(modelSpace.getStateSpaceConstraint().getBrake());
+          angularVelocity *= modelSpace.getStateSpaceConstraint().getBrake();
           break;
       }
     }

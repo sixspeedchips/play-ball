@@ -45,7 +45,7 @@ public class Connection implements Runnable {
   }
 
 
-  public void sendMessage(Message message) {
+  public void sendMessage(String message) {
     try {
       oos.writeObject(message);
     } catch (IOException ignored) {
@@ -75,10 +75,12 @@ public class Connection implements Runnable {
             SetName payload = GsonService.getInstance().fromJson(m.getPayload(), SetName.class);
             username = payload.getUsername();
             connectionUUID = connectionManager.setOrGetUUID(username);
-            Message r = Message.build()
+            String r = Message.build()
                 .messageType(MessageType.ASSIGN_UUID)
-                .messageUUID(connectionUUID)
-                .sign(connectionManager.getServerUUID());
+                .payload(GsonService.getInstance().toJson(connectionUUID))
+                .sign(connectionManager.getServerUUID())
+                .toJson();
+
             sendMessage(r);
             break;
           case CONTROL:

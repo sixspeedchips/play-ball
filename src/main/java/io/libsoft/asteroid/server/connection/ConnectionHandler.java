@@ -34,10 +34,10 @@ public class ConnectionHandler implements ConnectionManager {
 
 
   private void broadcast() {
-    Message m;
+    String m;
     GameState g = modelState.getState();
     for (Connection subscriber : subscribers.values()) {
-      m = Message.build().messageType(MessageType.GAME_STATE).gameState(g).sign(serverUUID);
+      m = Message.build().messageType(MessageType.GAME_STATE).gameState(g).sign(serverUUID).toJson();
       subscriber.sendMessage(m);
     }
   }

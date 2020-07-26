@@ -1,5 +1,6 @@
-package io.libsoft.asteroid.server;
+package io.libsoft.asteroid;
 
+import io.libsoft.asteroid.server.Server;
 import java.io.IOException;
 import java.net.InetAddress;
 

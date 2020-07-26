@@ -3,6 +3,7 @@ package io.libsoft.asteroid.model;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import io.libsoft.messenger.GameState;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
@@ -17,16 +18,16 @@ public class Space implements ModelState, ModelSpace {
 
 
   private final HashMap<UUID, Entity> entities;
-  private final double WIDTH;
-  private final double HEIGHT;
-  private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+  private Variables variables;
+
+  private ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
   private boolean running;
   private GameState currentGameState;
 
-  public Space() {
+  public Space() throws IOException {
     entities = new HashMap<>();
-    WIDTH = 1000;
-    HEIGHT = 1000;
+    variables = new Variables();
+
 
   }
 
@@ -40,13 +41,13 @@ public class Space implements ModelState, ModelSpace {
     for (Entity entity : entities.values()) {
       if (!entity.isPaused()) {
         entity.update();
-        currentGameState.getPEntities().add(entity.toString());
+        currentGameState.getEntities().add(entity.toString());
       }
     }
   }
 
   public void start() {
-    scheduler.scheduleAtFixedRate(this::update, 0, 10, TimeUnit.MILLISECONDS);
+    scheduler.scheduleAtFixedRate(this::update, 0, 3, TimeUnit.MILLISECONDS);
   }
 
 
@@ -99,14 +100,9 @@ public class Space implements ModelState, ModelSpace {
     entities.get(uuid).addForce(kc);
   }
 
-  @Override
-  public double getWidth() {
-    return WIDTH;
-  }
 
   @Override
-  public double getHeight() {
-    return HEIGHT;
+  public Variables getStateSpaceConstraint() {
+    return variables;
   }
-
 }
